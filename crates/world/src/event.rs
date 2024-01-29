@@ -13,7 +13,7 @@ impl World {
         _source: EntityId,
         target: EntityId,
         reactor: EntityId,
-        reaction: Reaction,
+        reaction: &Reaction,
         stack_depth: u64,
     ) {
         match (event, reaction) {
@@ -42,7 +42,7 @@ impl World {
 
                 self.perform(
                     Action::DealDamage {
-                        amount: damage_amount,
+                        amount: *damage_amount,
                     },
                     reactor,
                     target,
@@ -58,7 +58,7 @@ impl World {
 
                 self.perform(
                     Action::GainArmor {
-                        amount: armor_amount,
+                        amount: *armor_amount,
                     },
                     reactor,
                     reactor,
@@ -69,14 +69,14 @@ impl World {
         }
     }
 
-    pub fn emit(&mut self, event: Event, source: EntityId, target: EntityId, stack_depth: u64) {
+    pub fn emit(&mut self, event: &Event, source: EntityId, target: EntityId, stack_depth: u64) {
         log_with_indentation!(stack_depth, "[Event] {source:?} -> {target:?} {event:?}");
 
         let reactions_map = self.reaction_system.reactions_map.clone();
 
         for (reactor, reactions) in reactions_map.into_iter() {
             for reaction in reactions {
-                self.handle_event(&event, source, target, reactor, reaction, stack_depth)
+                self.handle_event(event, source, target, reactor, &reaction, stack_depth)
             }
         }
     }

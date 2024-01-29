@@ -47,7 +47,7 @@ impl World {
         stack_depth: u64,
     ) {
         for target in self.entities(query).iter() {
-            self.perform(action, source, target, stack_depth)
+            self.perform(action.clone(), source, target, stack_depth)
         }
     }
 }

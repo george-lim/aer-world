@@ -1,7 +1,7 @@
 use crate::{log_with_indentation, systems::components::*, EntityId, Event, World};
 
 #[cfg_attr(debug_assertions, derive(Debug))]
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum Action {
     Move { to_position: Position },
     DealDamage { amount: i64 },
@@ -25,8 +25,7 @@ impl World {
                 };
 
                 self.position_system.move_to(target, to_position);
-
-                self.emit(Event::Moved { from_position }, source, target, stack_depth)
+                self.emit(&Event::Moved { from_position }, source, target, stack_depth)
             }
             Action::DealDamage { amount } => {
                 let overflow_damage = self.armor_system.lose(&target, amount).unwrap_or(amount);
@@ -36,7 +35,7 @@ impl World {
                 };
 
                 if overflow_damage > 0 {
-                    self.emit(Event::Damaged, source, target, stack_depth)
+                    self.emit(&Event::Damaged, source, target, stack_depth)
                 }
 
                 if !is_alive {
