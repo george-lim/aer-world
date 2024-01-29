@@ -11,7 +11,7 @@ fn main() {
             max: 10,
         }),
         Some(Position { x: 0, y: 0 }),
-        vec![Reaction::OpportunityAttack { damage_amount: 3 }],
+        vec![Reaction::OpportunityAttack { damage_amount: 10 }],
     );
 
     let golem = world.spawn(

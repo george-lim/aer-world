@@ -3,9 +3,23 @@ use crate::{log_with_indentation, systems::components::*, EntityId, Event, World
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
 pub enum Action {
-    Move { to_position: Position },
-    DealDamage { amount: i64 },
-    GainArmor { amount: i64 },
+    Spawn {
+        allegiance: Option<Allegiance>,
+        armor: Option<Armor>,
+        health: Option<Health>,
+        position: Option<Position>,
+        reactions: Vec<Reaction>,
+    },
+    Destroy,
+    Move {
+        to_position: Position,
+    },
+    DealDamage {
+        amount: i64,
+    },
+    GainArmor {
+        amount: i64,
+    },
 }
 
 impl World {
@@ -19,6 +33,41 @@ impl World {
         log_with_indentation!(stack_depth, "[Action] {source:?} -> {target:?} {action:?}");
 
         match action {
+            Action::Spawn {
+                allegiance,
+                armor,
+                health,
+                position,
+                reactions,
+            } => {
+                let entity = self.next_entity;
+                self.next_entity = EntityId(entity.0 + 1);
+
+                if let Some(allegiance) = allegiance {
+                    self.allegiance_system.insert(entity, allegiance);
+                }
+
+                if let Some(armor) = armor {
+                    self.armor_system.insert(entity, armor);
+                }
+
+                if let Some(health) = health {
+                    self.health_system.insert(entity, health);
+                }
+
+                if let Some(position) = position {
+                    self.position_system.insert(entity, position);
+                }
+
+                self.reaction_system.insert(entity, reactions);
+            }
+            Action::Destroy => {
+                self.allegiance_system.remove(&target);
+                self.armor_system.remove(&target);
+                self.health_system.remove(&target);
+                self.position_system.remove(&target);
+                self.reaction_system.remove(&target);
+            }
             Action::Move { to_position } => {
                 let Some(from_position) = self.position_system.position(&target).copied() else {
                     return;
@@ -39,7 +88,7 @@ impl World {
                 }
 
                 if !is_alive {
-                    self.destroy(&target)
+                    self.perform(Action::Destroy, source, target, stack_depth + 1)
                 }
             }
             Action::GainArmor { amount } => self.armor_system.gain(&target, amount),

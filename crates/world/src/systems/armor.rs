@@ -1,5 +1,6 @@
 use crate::{EntityId, EntityMap};
 
+#[derive(Clone, Copy)]
 pub struct Armor {
     pub current: i64,
 }

@@ -1,7 +1,7 @@
 use crate::{EntityId, EntityMap, EntitySet};
 
 #[cfg_attr(debug_assertions, derive(Debug))]
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Allegiance {
     Player,
     Golem,

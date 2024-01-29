@@ -12,15 +12,16 @@ pub use action::Action;
 pub use entity_query::*;
 pub use systems::components::*;
 
-#[derive(Default)]
+pub const WORLD_ENTITY: EntityId = EntityId(0);
+
 pub struct World {
+    next_entity: EntityId,
+
     allegiance_system: AllegianceSystem,
     armor_system: ArmorSystem,
     health_system: HealthSystem,
     position_system: PositionSystem,
     reaction_system: ReactionSystem,
-
-    next_entity: EntityId,
 }
 
 impl World {
@@ -28,6 +29,7 @@ impl World {
         Default::default()
     }
 
+    // TODO: Remove this
     pub fn spawn(
         &mut self,
         allegiance: Option<Allegiance>,
@@ -38,34 +40,20 @@ impl World {
     ) -> EntityId {
         let entity = self.next_entity;
 
-        if let Some(allegiance) = allegiance {
-            self.allegiance_system.insert(entity, allegiance);
-        }
+        self.perform(
+            Action::Spawn {
+                allegiance,
+                armor,
+                health,
+                position,
+                reactions,
+            },
+            WORLD_ENTITY,
+            WORLD_ENTITY,
+            0,
+        );
 
-        if let Some(armor) = armor {
-            self.armor_system.insert(entity, armor);
-        }
-
-        if let Some(health) = health {
-            self.health_system.insert(entity, health);
-        }
-
-        if let Some(position) = position {
-            self.position_system.insert(entity, position);
-        }
-
-        self.reaction_system.insert(entity, reactions);
-
-        self.next_entity = EntityId(self.next_entity.0 + 1);
         entity
-    }
-
-    pub fn destroy(&mut self, entity: &EntityId) {
-        self.allegiance_system.remove(entity);
-        self.armor_system.remove(entity);
-        self.health_system.remove(entity);
-        self.position_system.remove(entity);
-        self.reaction_system.remove(entity);
     }
 
     #[allow(unused_variables)]
@@ -99,6 +87,19 @@ impl World {
             }
 
             println!();
+        }
+    }
+}
+
+impl Default for World {
+    fn default() -> Self {
+        Self {
+            next_entity: EntityId(1),
+            allegiance_system: Default::default(),
+            armor_system: Default::default(),
+            health_system: Default::default(),
+            position_system: Default::default(),
+            reaction_system: Default::default(),
         }
     }
 }

@@ -1,5 +1,6 @@
 use crate::{EntityId, EntityMap};
 
+#[derive(Clone, Copy)]
 pub struct Health {
     pub current: i64,
     pub max: i64,
