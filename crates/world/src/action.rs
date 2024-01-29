@@ -14,7 +14,7 @@ pub enum Action {
     Move {
         to_position: Position,
     },
-    DealDamage {
+    Damage {
         amount: i64,
     },
     GainArmor {
@@ -62,6 +62,8 @@ impl World {
                 self.reaction_system.insert(entity, reactions);
             }
             Action::Destroy => {
+                self.emit(&Event::BeforeDestroy, source, target, stack_depth);
+
                 self.allegiance_system.remove(&target);
                 self.armor_system.remove(&target);
                 self.health_system.remove(&target);
@@ -74,9 +76,15 @@ impl World {
                 };
 
                 self.position_system.move_to(target, to_position);
-                self.emit(&Event::Moved { from_position }, source, target, stack_depth)
+
+                self.emit(
+                    &Event::AfterMove { from_position },
+                    source,
+                    target,
+                    stack_depth,
+                )
             }
-            Action::DealDamage { amount } => {
+            Action::Damage { amount } => {
                 let overflow_damage = self.armor_system.lose(&target, amount).unwrap_or(amount);
 
                 let Some(is_alive) = self.health_system.lose(&target, overflow_damage) else {
@@ -84,11 +92,11 @@ impl World {
                 };
 
                 if overflow_damage > 0 {
-                    self.emit(&Event::Damaged, source, target, stack_depth)
+                    self.emit(&Event::AfterDamage, source, target, stack_depth)
                 }
 
                 if !is_alive {
-                    self.perform(Action::Destroy, source, target, stack_depth + 1)
+                    self.perform(Action::Destroy, source, target, stack_depth)
                 }
             }
             Action::GainArmor { amount } => self.armor_system.gain(&target, amount),

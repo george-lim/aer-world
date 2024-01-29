@@ -5,6 +5,7 @@ use crate::{EntityId, EntityMap};
 pub enum Reaction {
     OpportunityAttack { damage_amount: i64 },
     Reinforce { armor_amount: i64 },
+    Spite { damage_amount: i64 },
 }
 
 #[derive(Default)]

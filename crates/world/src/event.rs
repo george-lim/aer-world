@@ -2,22 +2,23 @@ use crate::{log_with_indentation, systems::components::*, Action, EntityId, Worl
 
 #[cfg_attr(debug_assertions, derive(Debug))]
 pub enum Event {
-    Moved { from_position: Position },
-    Damaged,
+    AfterMove { from_position: Position },
+    AfterDamage,
+    BeforeDestroy,
 }
 
 impl World {
     fn handle_event(
         &mut self,
         event: &Event,
-        _source: EntityId,
+        source: EntityId,
         target: EntityId,
         reactor: EntityId,
         reaction: &Reaction,
         stack_depth: u64,
     ) {
         match (event, reaction) {
-            (Event::Moved { from_position }, Reaction::OpportunityAttack { damage_amount }) => {
+            (Event::AfterMove { from_position }, Reaction::OpportunityAttack { damage_amount }) => {
                 let Some(reactor_allegiance) = self.allegiance_system.allegiance(&reactor) else {
                     return;
                 };
@@ -41,7 +42,7 @@ impl World {
                 log_with_indentation!(stack_depth, "[Reaction] {reactor:?} {reaction:?}");
 
                 self.perform(
-                    Action::DealDamage {
+                    Action::Damage {
                         amount: *damage_amount,
                     },
                     reactor,
@@ -49,7 +50,7 @@ impl World {
                     stack_depth + 1,
                 )
             }
-            (Event::Damaged, Reaction::Reinforce { armor_amount }) => {
+            (Event::AfterDamage, Reaction::Reinforce { armor_amount }) => {
                 if !(target == reactor) {
                     return;
                 }
@@ -62,6 +63,22 @@ impl World {
                     },
                     reactor,
                     reactor,
+                    stack_depth + 1,
+                )
+            }
+            (Event::BeforeDestroy, Reaction::Spite { damage_amount }) => {
+                if !(target == reactor) {
+                    return;
+                }
+
+                log_with_indentation!(stack_depth, "[Reaction] {reactor:?} {reaction:?}");
+
+                self.perform(
+                    Action::Damage {
+                        amount: *damage_amount,
+                    },
+                    reactor,
+                    source,
                     stack_depth + 1,
                 )
             }

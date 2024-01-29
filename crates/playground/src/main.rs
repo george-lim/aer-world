@@ -19,20 +19,23 @@ fn main() {
         Some(Armor { current: 0 }),
         Some(Health { current: 3, max: 3 }),
         Some(Position { x: 0, y: 5 }),
-        vec![Reaction::Reinforce { armor_amount: 3 }],
+        vec![
+            Reaction::Reinforce { armor_amount: 3 },
+            Reaction::Spite { damage_amount: 50 },
+        ],
     );
 
     world.describe(&player);
     world.describe(&golem);
 
-    world.perform(Action::DealDamage { amount: 1 }, player, golem, 0);
+    world.perform(Action::Damage { amount: 1 }, player, golem, 0);
 
     let query = EntityQuery {
         allegiance_filter: ComponentFilter::Include(&[Allegiance::Golem]),
         position_filter: ComponentFilter::Include(&[Position { x: 0, y: 5 }]),
     };
 
-    world.perform_with_query(Action::DealDamage { amount: 1 }, player, query, 0);
+    world.perform_with_query(Action::Damage { amount: 1 }, player, query, 0);
     world.perform(Action::GainArmor { amount: 5 }, player, player, 0);
 
     world.perform(

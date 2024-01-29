@@ -29,7 +29,6 @@ impl World {
         Default::default()
     }
 
-    // TODO: Remove this
     pub fn spawn(
         &mut self,
         allegiance: Option<Allegiance>,
