@@ -1,4 +1,4 @@
-use crate::{log_with_indentation, systems::components::*, EntityId, Event, World};
+use crate::{log_with_indentation, systems::components::*, EntityId, Event, Notification, World};
 
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
@@ -22,7 +22,10 @@ pub enum Action {
     },
 }
 
-impl World {
+impl<NotificationHandler> World<NotificationHandler>
+where
+    NotificationHandler: Fn(EntityId, Notification),
+{
     pub fn perform(
         &mut self,
         action: Action,
@@ -43,6 +46,17 @@ impl World {
                 let entity = self.next_entity;
                 self.next_entity = EntityId(entity.0 + 1);
 
+                (self.notification_handler)(
+                    entity,
+                    Notification::Spawn {
+                        allegiance: allegiance.as_ref(),
+                        armor: armor.as_ref(),
+                        health: health.as_ref(),
+                        position: position.as_ref(),
+                        reactions: &reactions,
+                    },
+                );
+
                 if let Some(allegiance) = allegiance {
                     self.allegiance_system.insert(entity, allegiance);
                 }
@@ -62,6 +76,7 @@ impl World {
                 self.reaction_system.insert(entity, reactions);
             }
             Action::Destroy => {
+                (self.notification_handler)(target, Notification::Destroy);
                 self.emit(&Event::BeforeDestroy, source, target, stack_depth);
 
                 self.allegiance_system.remove(&target);
@@ -85,9 +100,9 @@ impl World {
                 )
             }
             Action::Damage { amount } => {
-                let overflow_damage = self.armor_system.lose(&target, amount).unwrap_or(amount);
+                let overflow_damage = self.armor_system.lose(target, amount).unwrap_or(amount);
 
-                let Some(is_alive) = self.health_system.lose(&target, overflow_damage) else {
+                let Some(is_alive) = self.health_system.lose(target, overflow_damage) else {
                     return;
                 };
 
@@ -99,7 +114,7 @@ impl World {
                     self.perform(Action::Destroy, source, target, stack_depth)
                 }
             }
-            Action::GainArmor { amount } => self.armor_system.gain(&target, amount),
+            Action::GainArmor { amount } => self.armor_system.gain(target, amount),
         }
     }
 }

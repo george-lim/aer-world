@@ -1,4 +1,4 @@
-use crate::{log_with_indentation, systems::components::*, Action, EntityId, World};
+use crate::{log_with_indentation, systems::components::*, Action, EntityId, Notification, World};
 
 #[cfg_attr(debug_assertions, derive(Debug))]
 pub enum Event {
@@ -7,7 +7,10 @@ pub enum Event {
     BeforeDestroy,
 }
 
-impl World {
+impl<NotificationHandler> World<NotificationHandler>
+where
+    NotificationHandler: Fn(EntityId, Notification),
+{
     fn handle_event(
         &mut self,
         event: &Event,

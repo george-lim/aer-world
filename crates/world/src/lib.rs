@@ -1,6 +1,7 @@
 mod action;
 mod entity_query;
 mod event;
+mod notification;
 mod systems;
 mod utils;
 
@@ -10,102 +11,42 @@ use utils::*;
 
 pub use action::Action;
 pub use entity_query::*;
+pub use notification::*;
 pub use systems::components::*;
 
 pub const WORLD_ENTITY: EntityId = EntityId(0);
 
-pub struct World {
+pub struct World<NotificationHandler> {
+    notification_handler: NotificationHandler,
     next_entity: EntityId,
 
-    allegiance_system: AllegianceSystem,
-    armor_system: ArmorSystem,
-    health_system: HealthSystem,
-    position_system: PositionSystem,
-    reaction_system: ReactionSystem,
+    allegiance_system: AllegianceSystem<NotificationHandler>,
+    armor_system: ArmorSystem<NotificationHandler>,
+    health_system: HealthSystem<NotificationHandler>,
+    position_system: PositionSystem<NotificationHandler>,
+    reaction_system: ReactionSystem<NotificationHandler>,
 }
 
-impl World {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    pub fn spawn(
-        &mut self,
-        allegiance: Option<Allegiance>,
-        armor: Option<Armor>,
-        health: Option<Health>,
-        position: Option<Position>,
-        reactions: Vec<Reaction>,
-    ) -> EntityId {
-        let entity = self.next_entity;
-
-        self.perform(
-            Action::Spawn {
-                allegiance,
-                armor,
-                health,
-                position,
-                reactions,
-            },
-            WORLD_ENTITY,
-            WORLD_ENTITY,
-            0,
-        );
-
-        entity
-    }
-
-    #[allow(unused_variables)]
-    pub fn describe(&self, entity: &EntityId) {
-        #[cfg(debug_assertions)]
-        {
-            println!();
-
-            match self.allegiance_system.allegiance(entity) {
-                Some(allegiance) => println!("---- {allegiance:?} {entity:?} ----"),
-                None => println!("---- {entity:?} ----"),
-            };
-
-            if let Some(health) = self.health_system.health(entity) {
-                print!("life: {health:?}");
-
-                match self.armor_system.armor(entity) {
-                    Some(armor) if armor.current > 0 => {
-                        println!(" + {armor:?}")
-                    }
-                    _ => println!(),
-                }
-            }
-
-            if let Some(position) = self.position_system.position(entity) {
-                println!("position: {position:?}");
-            }
-
-            if let Some(reactions) = self.reaction_system.reactions(entity) {
-                println!("reactions: {reactions:?}");
-            }
-
-            println!();
-        }
-    }
-}
-
-impl Default for World {
-    fn default() -> Self {
+impl<NotificationHandler> World<NotificationHandler>
+where
+    NotificationHandler: Fn(EntityId, Notification) + Clone,
+{
+    pub fn new(notification_handler: NotificationHandler) -> Self {
         Self {
+            notification_handler: notification_handler.clone(),
             next_entity: EntityId(1),
-            allegiance_system: Default::default(),
-            armor_system: Default::default(),
-            health_system: Default::default(),
-            position_system: Default::default(),
-            reaction_system: Default::default(),
+            allegiance_system: AllegianceSystem::new(notification_handler.clone()),
+            armor_system: ArmorSystem::new(notification_handler.clone()),
+            health_system: HealthSystem::new(notification_handler.clone()),
+            position_system: PositionSystem::new(notification_handler.clone()),
+            reaction_system: ReactionSystem::new(notification_handler),
         }
     }
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct EntityId(usize);
+pub struct EntityId(pub usize);
 
 #[cfg(debug_assertions)]
 impl std::fmt::Debug for EntityId {

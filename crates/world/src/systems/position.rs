@@ -1,4 +1,4 @@
-use crate::{EntityId, EntityMap, EntitySet};
+use crate::{EntityId, EntityMap, EntitySet, Notification};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Position {
@@ -13,13 +13,24 @@ impl std::fmt::Debug for Position {
     }
 }
 
-#[derive(Default)]
-pub struct PositionSystem {
+pub struct PositionSystem<NotificationHandler> {
+    notification_handler: NotificationHandler,
     pub entities: EntitySet,
     position_map: EntityMap<Position>,
 }
 
-impl PositionSystem {
+impl<NotificationHandler> PositionSystem<NotificationHandler>
+where
+    NotificationHandler: Fn(EntityId, Notification),
+{
+    pub fn new(notification_handler: NotificationHandler) -> Self {
+        Self {
+            notification_handler,
+            entities: Default::default(),
+            position_map: Default::default(),
+        }
+    }
+
     pub fn position(&self, entity: &EntityId) -> Option<&Position> {
         self.position_map.get(entity)
     }
@@ -41,11 +52,13 @@ impl PositionSystem {
     }
 
     pub fn move_to(&mut self, entity: EntityId, position: Position) {
-        if !self.position_map.contains_key(&entity) {
+        let Some(current_position) = self.position_map.get_mut(&entity) else {
             return;
-        }
+        };
 
-        self.insert(entity, position);
+        *current_position = position;
+
+        (self.notification_handler)(entity, Notification::ChangePosition(Some(current_position)));
     }
 
     pub fn insert(&mut self, entity: EntityId, position: Position) {

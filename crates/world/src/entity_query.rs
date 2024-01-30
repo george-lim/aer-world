@@ -1,4 +1,4 @@
-use crate::{systems::components::*, utils::*, Action, EntityId, World};
+use crate::{systems::components::*, utils::*, Action, EntityId, Notification, World};
 
 pub enum ComponentFilter<'qry, Component> {
     Ignore,
@@ -11,7 +11,10 @@ pub struct EntityQuery<'qry> {
     pub position_filter: ComponentFilter<'qry, Position>,
 }
 
-impl World {
+impl<NotificationHandler> World<NotificationHandler>
+where
+    NotificationHandler: Fn(EntityId, Notification),
+{
     fn entities(&self, query: EntityQuery) -> EntitySet {
         let allegiance_entities = match query.allegiance_filter {
             ComponentFilter::Include(allegiances) => {

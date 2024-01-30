@@ -1,4 +1,4 @@
-use crate::{EntityId, EntityMap, EntitySet};
+use crate::{EntityId, EntityMap, EntitySet, Notification};
 
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -7,13 +7,24 @@ pub enum Allegiance {
     Golem,
 }
 
-#[derive(Default)]
-pub struct AllegianceSystem {
+pub struct AllegianceSystem<NotificationHandler> {
+    _notification_handler: NotificationHandler,
     pub entities: EntitySet,
     allegiance_map: EntityMap<Allegiance>,
 }
 
-impl AllegianceSystem {
+impl<NotificationHandler> AllegianceSystem<NotificationHandler>
+where
+    NotificationHandler: Fn(EntityId, Notification),
+{
+    pub fn new(notification_handler: NotificationHandler) -> Self {
+        Self {
+            _notification_handler: notification_handler,
+            entities: Default::default(),
+            allegiance_map: Default::default(),
+        }
+    }
+
     pub fn allegiance(&self, entity: &EntityId) -> Option<&Allegiance> {
         self.allegiance_map.get(entity)
     }

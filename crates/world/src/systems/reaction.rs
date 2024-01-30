@@ -1,4 +1,4 @@
-use crate::{EntityId, EntityMap};
+use crate::{EntityId, EntityMap, Notification};
 
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone, Copy)]
@@ -8,13 +8,23 @@ pub enum Reaction {
     Spite { damage_amount: i64 },
 }
 
-#[derive(Default)]
-pub struct ReactionSystem {
+pub struct ReactionSystem<NotificationHandler> {
+    _notification_handler: NotificationHandler,
     pub reactions_map: EntityMap<Vec<Reaction>>,
 }
 
-impl ReactionSystem {
-    pub fn reactions(&self, entity: &EntityId) -> Option<&Vec<Reaction>> {
+impl<NotificationHandler> ReactionSystem<NotificationHandler>
+where
+    NotificationHandler: Fn(EntityId, Notification),
+{
+    pub fn new(notification_handler: NotificationHandler) -> Self {
+        Self {
+            _notification_handler: notification_handler,
+            reactions_map: Default::default(),
+        }
+    }
+
+    pub fn _reactions(&self, entity: &EntityId) -> Option<&Vec<Reaction>> {
         self.reactions_map.get(entity)
     }
 

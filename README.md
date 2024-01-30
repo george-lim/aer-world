@@ -46,6 +46,12 @@ reactions: [Reinforce { armor_amount: 3 }]
 2. When `Golem 2` takes 3 damage, its own "Reinforce" reaction triggers. This interrupts the damage action, and spawns a new action to gain 3 armor for the Golem.
 3. Since there are no more reactions to any of the actions on the stack, the actions are popped. The golem is left with 1 HP and 3 Armor as a result of moving away from the player.
 
+### Reading state
+
+The AER pattern does not permit directly querying systems. Instead, a notification handler is passed in during `World` instantiation, which will be provided notifications for any state change in `World`. This allows all state changes to be "pushed" to the consumer from a single source.
+
+### Updating state
+
 The AER pattern does not permit direct mutation of systems. Instead, every possible state change must come from an **action**. An action must be performed by a source entity onto a target entity (the target can also be the source).
 
 Entity queries can be used to provide a "fuzzy search" for action targets, like AOE attacks that attack a map region as opposed to a single target.
@@ -78,4 +84,4 @@ AER World has two crates. `world` is the library for the game state container an
 
 Just execute `cargo run` to start the `playground` simulation.
 
-`world` will only log actions, events, and reactions to `stdout` when `debug_assertions` is enabled. The `World::describe(entity: &EntityId)` method can be used to log every component of an entity.
+`world` will only log actions, events, and reactions to `stdout` when `debug_assertions` is enabled.

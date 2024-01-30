@@ -1,4 +1,4 @@
-use crate::{EntityId, EntityMap};
+use crate::{EntityId, EntityMap, Notification};
 
 #[derive(Clone, Copy)]
 pub struct Health {
@@ -13,24 +13,36 @@ impl std::fmt::Debug for Health {
     }
 }
 
-#[derive(Default)]
-pub struct HealthSystem {
+pub struct HealthSystem<NotificationHandler> {
+    notification_handler: NotificationHandler,
     health_map: EntityMap<Health>,
 }
 
-impl HealthSystem {
-    pub fn health(&self, entity: &EntityId) -> Option<&Health> {
+impl<NotificationHandler> HealthSystem<NotificationHandler>
+where
+    NotificationHandler: Fn(EntityId, Notification),
+{
+    pub fn new(notification_handler: NotificationHandler) -> Self {
+        Self {
+            notification_handler,
+            health_map: Default::default(),
+        }
+    }
+
+    pub fn _health(&self, entity: &EntityId) -> Option<&Health> {
         self.health_map.get(entity)
     }
 
     // Returns whether the entity is alive.
-    pub fn lose(&mut self, entity: &EntityId, amount: i64) -> Option<bool> {
-        let Some(armor) = self.health_map.get_mut(entity) else {
+    pub fn lose(&mut self, entity: EntityId, amount: i64) -> Option<bool> {
+        let Some(health) = self.health_map.get_mut(&entity) else {
             return None;
         };
 
-        armor.current -= amount;
-        Some(armor.current > 0)
+        health.current -= amount;
+
+        (self.notification_handler)(entity, Notification::ChangeHealth(Some(health)));
+        Some(health.current > 0)
     }
 
     pub fn insert(&mut self, entity: EntityId, health: Health) {
